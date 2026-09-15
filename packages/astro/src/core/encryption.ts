@@ -136,7 +136,11 @@ export async function decryptString(key: CryptoKey, encoded: string, additionalD
  * @param {CspAlgorithm} algorithm The algorithm to use.
  */
 export async function generateCspDigest(data: string, algorithm: CspAlgorithm): Promise<CspHash> {
-	const hashBuffer = await crypto.subtle.digest(algorithm, encoder.encode(data));
+	// HTML parsers normalize CRLF and lone CR to LF before tokenisation
+	// (HTML spec §13.2.3.5). Browsers compute CSP hashes against the
+	// post-normalisation text, so we must hash the same form.
+	const normalized = data.replace(/\r\n?/g, '\n');
+	const hashBuffer = await crypto.subtle.digest(algorithm, encoder.encode(normalized));
 
 	const hash = encodeBase64(new Uint8Array(hashBuffer));
 	return `${ALGORITHMS[algorithm]}${hash}`;
